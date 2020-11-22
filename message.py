@@ -9,8 +9,8 @@ class Message:
 
 	def output(self, v=False, g=False) -> str:
 		out = f'{self.result[0]} {self.result[1]}'
-		if v and self.result[0] == 'tcp' or ( self.result[0] == 'udp' and g):
+		if v and self.result[0] == 'TCP' or (self.result[0] == 'UDP' and g):
 			out += ' ' + str(self.result[2])
-		if g and self.result[0] == 'tcp':
+		if g and self.result[0] == 'TCP':
 			out += ' ' + str(self.result[3])
 		return out

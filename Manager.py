@@ -24,8 +24,7 @@ class myThread(Thread):
 
 
 class Manager:
-	def __init__(self, host, ports: dict, timeout, verbose, num_threads,
-				 guess):
+	def __init__(self, host, ports: dict, timeout, verbose, num_threads, guess):
 		self.guess = guess
 		self.verbose = verbose
 		self.host = socket.gethostbyname(host)

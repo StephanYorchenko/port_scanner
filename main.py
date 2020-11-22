@@ -2,7 +2,6 @@ import argparse
 import sys
 
 from Manager import Manager
-from message import Message
 
 srange = lambda x, y: range(x, y + 1)
 
@@ -28,9 +27,9 @@ class CLInterface:
 				help="число потоков"
 		)
 		parser.add_argument(
-				'-v', '--verbose', default=1, type=int, help="подробный режим"
+				'-v', '--verbose', action="store_true", help="подробный режим"
 		)
-		parser.add_argument('-g', '--guess', default=False)
+		parser.add_argument('-g', '--guess', action="store_true")
 		parser.add_argument('ports', metavar='PORT', type=str, nargs='+',
 							help='ports....')
 		return parser.parse_args()
@@ -76,7 +75,6 @@ class CLInterface:
 		self.manager.start()
 		for i in self.manager.get_output():
 			self.show(i)
-
 
 	@staticmethod
 	def catch_error(message):

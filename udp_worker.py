@@ -1,5 +1,6 @@
 import socket
-import time
+import struct
+from random import randint
 
 from message import Message
 
@@ -10,13 +11,13 @@ class UDPWorker:
 		self.timeout = timeout
 
 	def _scan_port(self, udp_sock, icmp_sock, port):
-
 		for tries in range(3):
 			udp_sock.sendto(b'data', (self.ip_addr, port))
 			try:
 				icmp_sock.recv(100)
 			except socket.timeout:
-				return Message(0).add_result('UDP', port)
+				prot = self.define_udp_protocol(udp_sock, port)
+				return Message(0).add_result('UDP', port, prot)
 		return Message(1).add_result('Closed')
 
 	def scan(self, port) -> Message:
@@ -30,27 +31,40 @@ class UDPWorker:
 		udp_sock.close()
 		return a
 
+	def define_udp_protocol(self, sock, port):
+		requests, ID = self.get_requests()
+		for request_type in requests.keys():
+			sock.settimeout(self.timeout)
+			sock.sendto(requests[request_type], (self.ip_addr, port))
+			try:
+				data = sock.recv(2048)
+				if data is not None:
+					proto = self.define_answer_type(data, ID,
+											   requests[request_type])
+					return proto
+			except socket.timeout:
+				pass
+		return '-'
 
-# def get_open_udp_ports(self, udp_ports):
-# 	open_udp = []
-# 	udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-# 	icmp_sock = socket.socket(socket.AF_INET, socket.SOCK_RAW,
-# 							  socket.IPPROTO_ICMP)
-# 	icmp_sock.bind(('0.0.0.0', 10000))
-# 	icmp_sock.settimeout(self.timeout)
-# 	for port in udp_ports:
-# 		for p in port:
-# 			for tries in range(3):
-# 				udp_sock.sendto(b'data', (self.ip_address, int(p)))
-# 				try:
-# 					icmp_sock.recv(100)
-# 				except socket.timeout:
-# 					open_udp.append(p)
-# 					break
-# 	if self.guess:
-# 		for port in open_udp:
-# 			proto = define_protocol(udp_sock, self.ip_address, int(port))
-# 			print(f'UDP {port} {proto}')
-# 	else:
-# 		for port in open_udp:
-# 			print(f'UDP {port}')
+	@staticmethod
+	def define_answer_type(data, ID, sended_data):
+		if data[:4].startswith(b'HTTP'):
+			return 'HTTP'
+		elif struct.pack('!H', ID) in data:
+			return 'DNS'
+		elif data == sended_data:
+			return 'ECHO'
+		else:
+			return '-'
+
+	@staticmethod
+	def get_requests():
+		id = randint(1, 65535)
+		dns_request = struct.pack("!HHHHHH", id, 256, 1, 0, 0, 0) + b"\x06google\x03com\x00\x00\x01\x00\x01"
+		requests = {
+				'HTTP': b'GET / HTTP/1.1',
+				'DNS': dns_request,
+				'ECHO': b'hello'
+		}
+		return requests, id
+
